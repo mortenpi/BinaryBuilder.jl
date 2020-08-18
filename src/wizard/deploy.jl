@@ -5,7 +5,7 @@ function print_build_tarballs(io::IO, state::WizardState)
         url_string = repr(x[1])
         if endswith(x[1], ".git")
             "GitSource($(url_string), $(repr(x[2].hash)))"
-        elseif any(endswith(x[1], ext) for ext in archive_extensions)
+        elseif any(endswith(x[1], ext) for ext in BinaryBuilderBase.archive_extensions)
             "ArchiveSource($(url_string), $(repr(x[2].hash)))"
         else
             "FileSource($(url_string), $(repr(x[2].hash)))"
@@ -25,7 +25,7 @@ function print_build_tarballs(io::IO, state::WizardState)
         """
     end
 
-    if state.files === nothing
+    if any(isnothing, (state.files, state.file_kinds, state.file_varnames))
         products_string = "Product[\n]"
     else
         stuff = collect(zip(state.files, state.file_kinds, state.file_varnames))
@@ -236,13 +236,20 @@ function _deploy(state::WizardState)
     elseif deploy_select == 2
         directory = nonempty_line_prompt(
             "filename",
-            "Enter directory where to write build_tarballs.jl to:";
+            "Enter directory to write build_tarballs.jl to:";
             ins=state.ins,
             outs=state.outs,
         )
         mkpath(directory)
         open(joinpath(directory, "build_tarballs.jl"), "w") do io
             print_build_tarballs(io, state)
+        end
+        if !isempty(state.patches)
+            mkpath(joinpath(directory, "bundled", "patches"))
+            for patch in state.patches
+                patch_path = joinpath(directory, "bundled", "patches", patch.name)
+                open(f->write(f, patch.patch), patch_path, "w")
+            end
         end
     else
         println(state.outs, "Your generated build_tarballs.jl:")
