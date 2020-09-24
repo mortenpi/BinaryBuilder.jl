@@ -609,7 +609,10 @@ function autobuild(dir::AbstractString,
 
     # If the user passed in a src_version with a build number, bail out
     if src_version.build != ()
-        error("Will not build with a `src_version` that has a build number already specified!")
+        #error("Will not build with a `src_version` that has a build number already specified!")
+        @warn "Building with a `src_version` that has a build number already specified!"
+        # Sanitizing the version number:
+        src_version = VersionNumber(src_version.major, src_version.minor, src_version.patch, src_version.prerelease)
     end
 
     # We must prepare our sources.  Download them, hash them, etc...
@@ -1276,7 +1279,7 @@ function build_jll_package(src_name::String,
 
             \"\"\"
                 dev_jll()
-            
+
             Check this package out to the dev package directory (usually ~/.julia/dev),
             copying the artifact over to a local `override` directory, allowing package
             developers to experiment with a locally-built binary.
